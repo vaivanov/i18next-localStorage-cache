@@ -1,26 +1,5 @@
 import * as utils from './utils';
-
-const storage = {
-  setItem(key, value) {
-    if (window.localStorage) {
-      try {
-        window.localStorage.setItem(key, value);
-      } catch (e) {
-        // f.log('failed to set value for key "' + key + '" to localStorage.');
-      }
-    }
-  },
-  getItem(key, value) {
-    if (window.localStorage) {
-      try {
-        return window.localStorage.getItem(key, value);
-      } catch (e) {
-        // f.log('failed to get value for key "' + key + '" from localStorage.');
-      }
-    }
-    return undefined;
-  }
-};
+import storage from 'local-storage-fallback';
 
 function getDefaults() {
   return {
@@ -47,8 +26,11 @@ class Cache {
   load(lngs, callback) {
     const store = {};
     const nowMS = new Date().getTime();
-
-    if (!window.localStorage || !lngs.length) {
+    try {
+      if (!storage || !lngs.length) {
+        return callback(null, null);
+      }
+    } catch(e) {
       return callback(null, null);
     }
 
@@ -81,7 +63,7 @@ class Cache {
 
   store(storeParam) {
     const store = storeParam;
-    if (window.localStorage) {
+    if (storage) {
       for (const m in store) { // eslint-disable-line
         // timestamp
         store[m].i18nStamp = new Date().getTime();

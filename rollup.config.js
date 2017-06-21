@@ -1,5 +1,6 @@
 import babel from 'rollup-plugin-babel';
 import uglify from 'rollup-plugin-uglify';
+import commonjs from 'rollup-plugin-commonjs';
 import nodeResolve from 'rollup-plugin-node-resolve';
 import { argv } from 'yargs';
 
@@ -11,7 +12,9 @@ const babelOptions = {
   presets: [['es2015', { modules: false }], 'stage-0'],
   babelrc: false
 };
-
+const commonjsOptions = {
+  include: 'node_modules/**'
+}
 const dest = {
   amd: `dist/amd/i18nextLocalStorageCache${compress ? '.min' : ''}.js`,
   umd: `dist/umd/i18nextLocalStorageCache${compress ? '.min' : ''}.js`,
@@ -23,6 +26,7 @@ export default {
   format,
   plugins: [
     babel(babelOptions),
+    commonjs(commonjsOptions),
     nodeResolve({ jsnext: true })
   ].concat(compress ? uglify() : []),
   moduleName: 'i18nextLocalStorageCache',

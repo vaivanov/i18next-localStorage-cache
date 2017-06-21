@@ -37,31 +37,417 @@ function debounce(func, wait, immediate) {
   };
 }
 
+function unwrapExports (x) {
+	return x && x.__esModule ? x['default'] : x;
+}
+
+function createCommonjsModule(fn, module) {
+	return module = { exports: {} }, fn(module, module.exports), module.exports;
+}
+
+var hasStorage_1 = createCommonjsModule(function (module, exports) {
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = hasStorage;
+var TEST_KEY = '__test';
+
+function hasStorage() {
+  var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'localStorage';
+
+  try {
+    var storage = window[name];
+    storage.setItem(TEST_KEY, '1');
+    storage.removeItem(TEST_KEY);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+});
+
+/*!
+ * cookie
+ * Copyright(c) 2012-2014 Roman Shtylman
+ * Copyright(c) 2015 Douglas Christopher Wilson
+ * MIT Licensed
+ */
+
+/**
+ * Module exports.
+ * @public
+ */
+
+var parse_1 = parse;
+var serialize_1 = serialize;
+
+/**
+ * Module variables.
+ * @private
+ */
+
+var decode = decodeURIComponent;
+var encode = encodeURIComponent;
+var pairSplitRegExp = /; */;
+
+/**
+ * RegExp to match field-content in RFC 7230 sec 3.2
+ *
+ * field-content = field-vchar [ 1*( SP / HTAB ) field-vchar ]
+ * field-vchar   = VCHAR / obs-text
+ * obs-text      = %x80-FF
+ */
+
+var fieldContentRegExp = /^[\u0009\u0020-\u007e\u0080-\u00ff]+$/;
+
+/**
+ * Parse a cookie header.
+ *
+ * Parse the given cookie header string into an object
+ * The object has the various cookies as keys(names) => values
+ *
+ * @param {string} str
+ * @param {object} [options]
+ * @return {object}
+ * @public
+ */
+
+function parse(str, options) {
+  if (typeof str !== 'string') {
+    throw new TypeError('argument str must be a string');
+  }
+
+  var obj = {};
+  var opt = options || {};
+  var pairs = str.split(pairSplitRegExp);
+  var dec = opt.decode || decode;
+
+  for (var i = 0; i < pairs.length; i++) {
+    var pair = pairs[i];
+    var eq_idx = pair.indexOf('=');
+
+    // skip things that don't look like key=value
+    if (eq_idx < 0) {
+      continue;
+    }
+
+    var key = pair.substr(0, eq_idx).trim();
+    var val = pair.substr(++eq_idx, pair.length).trim();
+
+    // quoted values
+    if ('"' == val[0]) {
+      val = val.slice(1, -1);
+    }
+
+    // only assign once
+    if (undefined == obj[key]) {
+      obj[key] = tryDecode(val, dec);
+    }
+  }
+
+  return obj;
+}
+
+/**
+ * Serialize data into a cookie header.
+ *
+ * Serialize the a name value pair into a cookie string suitable for
+ * http headers. An optional options object specified cookie parameters.
+ *
+ * serialize('foo', 'bar', { httpOnly: true })
+ *   => "foo=bar; httpOnly"
+ *
+ * @param {string} name
+ * @param {string} val
+ * @param {object} [options]
+ * @return {string}
+ * @public
+ */
+
+function serialize(name, val, options) {
+  var opt = options || {};
+  var enc = opt.encode || encode;
+
+  if (typeof enc !== 'function') {
+    throw new TypeError('option encode is invalid');
+  }
+
+  if (!fieldContentRegExp.test(name)) {
+    throw new TypeError('argument name is invalid');
+  }
+
+  var value = enc(val);
+
+  if (value && !fieldContentRegExp.test(value)) {
+    throw new TypeError('argument val is invalid');
+  }
+
+  var str = name + '=' + value;
+
+  if (null != opt.maxAge) {
+    var maxAge = opt.maxAge - 0;
+    if (isNaN(maxAge)) throw new Error('maxAge should be a Number');
+    str += '; Max-Age=' + Math.floor(maxAge);
+  }
+
+  if (opt.domain) {
+    if (!fieldContentRegExp.test(opt.domain)) {
+      throw new TypeError('option domain is invalid');
+    }
+
+    str += '; Domain=' + opt.domain;
+  }
+
+  if (opt.path) {
+    if (!fieldContentRegExp.test(opt.path)) {
+      throw new TypeError('option path is invalid');
+    }
+
+    str += '; Path=' + opt.path;
+  }
+
+  if (opt.expires) {
+    if (typeof opt.expires.toUTCString !== 'function') {
+      throw new TypeError('option expires is invalid');
+    }
+
+    str += '; Expires=' + opt.expires.toUTCString();
+  }
+
+  if (opt.httpOnly) {
+    str += '; HttpOnly';
+  }
+
+  if (opt.secure) {
+    str += '; Secure';
+  }
+
+  if (opt.sameSite) {
+    var sameSite = typeof opt.sameSite === 'string'
+      ? opt.sameSite.toLowerCase() : opt.sameSite;
+
+    switch (sameSite) {
+      case true:
+        str += '; SameSite=Strict';
+        break;
+      case 'lax':
+        str += '; SameSite=Lax';
+        break;
+      case 'strict':
+        str += '; SameSite=Strict';
+        break;
+      default:
+        throw new TypeError('option sameSite is invalid');
+    }
+  }
+
+  return str;
+}
+
+/**
+ * Try decoding a string using a decoding function.
+ *
+ * @param {string} str
+ * @param {function} decode
+ * @private
+ */
+
+function tryDecode(str, decode) {
+  try {
+    return decode(str);
+  } catch (e) {
+    return str;
+  }
+}
+
+var index$1 = {
+	parse: parse_1,
+	serialize: serialize_1
+};
+
+var CookieStorage_1 = createCommonjsModule(function (module, exports) {
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+exports.hasCookies = hasCookies;
+
+
+
+var _cookie2 = _interopRequireDefault(index$1);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var prefix = 'lS_';
+
+var CookieStorage = function () {
+  function CookieStorage() {
+    _classCallCheck(this, CookieStorage);
+  }
+
+  _createClass(CookieStorage, [{
+    key: 'getItem',
+    value: function getItem(key) {
+      var cookies = _cookie2.default.parse(document.cookie);
+      if (!cookies || !cookies.hasOwnProperty(prefix + key)) {
+        return null;
+      }
+      return cookies[prefix + key];
+    }
+  }, {
+    key: 'setItem',
+    value: function setItem(key, value) {
+      document.cookie = _cookie2.default.serialize(prefix + key, value, {
+        path: '/'
+      });
+      return value;
+    }
+  }, {
+    key: 'removeItem',
+    value: function removeItem(key) {
+      document.cookie = _cookie2.default.serialize(prefix + key, '', {
+        path: '/',
+        maxAge: -1
+      });
+      return null;
+    }
+  }, {
+    key: 'clear',
+    value: function clear() {
+      var cookies = _cookie2.default.parse(document.cookie);
+      for (var key in cookies) {
+        if (key.indexOf(prefix) === 0) {
+          this.removeItem(key.substr(prefix.length));
+        }
+      }
+
+      return null;
+    }
+  }]);
+
+  return CookieStorage;
+}();
+
+exports.default = CookieStorage;
+function hasCookies() {
+  var _CookieStorage$protot = CookieStorage.prototype,
+      setItem = _CookieStorage$protot.setItem,
+      getItem = _CookieStorage$protot.getItem,
+      removeItem = _CookieStorage$protot.removeItem;
+
+
+  try {
+    var TEST_KEY = '__test';
+    setItem(TEST_KEY, '1');
+    var value = getItem(TEST_KEY);
+    removeItem(TEST_KEY);
+
+    return value == '1';
+  } catch (e) {
+    return false;
+  }
+}
+});
+
+var MemoryStorage_1 = createCommonjsModule(function (module, exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var storage = {
-  setItem: function setItem(key, value) {
-    if (window.localStorage) {
-      try {
-        window.localStorage.setItem(key, value);
-      } catch (e) {
-        // f.log('failed to set value for key "' + key + '" to localStorage.');
-      }
-    }
-  },
-  getItem: function getItem(key, value) {
-    if (window.localStorage) {
-      try {
-        return window.localStorage.getItem(key, value);
-      } catch (e) {
-        // f.log('failed to get value for key "' + key + '" from localStorage.');
-      }
-    }
-    return undefined;
+var MemoryStorage = function () {
+  function MemoryStorage() {
+    _classCallCheck(this, MemoryStorage);
+
+    this._data = {};
   }
-};
+
+  _createClass(MemoryStorage, [{
+    key: "getItem",
+    value: function getItem(key) {
+      return this._data.hasOwnProperty(key) ? this._data[key] : undefined;
+    }
+  }, {
+    key: "setItem",
+    value: function setItem(key, value) {
+      return this._data[key] = String(value);
+    }
+  }, {
+    key: "removeItem",
+    value: function removeItem(key) {
+      return delete this._data[key];
+    }
+  }, {
+    key: "clear",
+    value: function clear() {
+      return this._data = {};
+    }
+  }]);
+
+  return MemoryStorage;
+}();
+
+exports.default = MemoryStorage;
+});
+
+var index = createCommonjsModule(function (module, exports) {
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+
+
+var _hasStorage2 = _interopRequireDefault(hasStorage_1);
+
+
+
+var _CookieStorage2 = _interopRequireDefault(CookieStorage_1);
+
+
+
+var _MemoryStorage2 = _interopRequireDefault(MemoryStorage_1);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var storage = null;
+
+if ((0, _hasStorage2.default)('localStorage')) {
+  // use localStorage
+  storage = window.localStorage;
+} else if ((0, _hasStorage2.default)('sessionStorage')) {
+  // use sessionStorage
+  storage = window.sessionStorage;
+} else if ((0, CookieStorage_1.hasCookies)()) {
+  // use cookies
+  storage = new _CookieStorage2.default();
+} else {
+  // use memory
+  storage = new _MemoryStorage2.default();
+}
+
+exports.default = storage;
+});
+
+var storage = unwrapExports(index);
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function getDefaults() {
   return {
@@ -99,8 +485,11 @@ var Cache = function () {
 
       var store = {};
       var nowMS = new Date().getTime();
-
-      if (!window.localStorage || !lngs.length) {
+      try {
+        if (!storage || !lngs.length) {
+          return callback(null, null);
+        }
+      } catch (e) {
         return callback(null, null);
       }
 
@@ -133,7 +522,7 @@ var Cache = function () {
     key: 'store',
     value: function store(storeParam) {
       var store = storeParam;
-      if (window.localStorage) {
+      if (storage) {
         for (var m in store) {
           // eslint-disable-line
           // timestamp
