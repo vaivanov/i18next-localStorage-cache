@@ -1,6 +1,6 @@
 {
-  "name": "i18next-localstorage-cache",
-  "version": "1.1.1",
+  "name": "i18next-localstorage-cache-fallback",
+  "version": "1.2.0",
   "description": "caching layer for i18next using browsers localStorage",
   "main": "./index.js",
   "jsnext:main": "dist/es/index.js",
