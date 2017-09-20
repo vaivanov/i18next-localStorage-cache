@@ -45,29 +45,6 @@ function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
 }
 
-var hasStorage_1 = createCommonjsModule(function (module, exports) {
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = hasStorage;
-var TEST_KEY = '__test';
-
-function hasStorage() {
-  var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'localStorage';
-
-  try {
-    var storage = window[name];
-    storage.setItem(TEST_KEY, '1');
-    storage.removeItem(TEST_KEY);
-    return true;
-  } catch (e) {
-    return false;
-  }
-}
-});
-
 /*!
  * cookie
  * Copyright(c) 2012-2014 Roman Shtylman
@@ -262,7 +239,7 @@ function tryDecode(str, decode) {
   }
 }
 
-var index$1 = {
+var cookie = {
 	parse: parse_1,
 	serialize: serialize_1
 };
@@ -280,7 +257,7 @@ exports.hasCookies = hasCookies;
 
 
 
-var _cookie2 = _interopRequireDefault(index$1);
+var _cookie2 = _interopRequireDefault(cookie);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -290,7 +267,12 @@ var prefix = 'lS_';
 
 var CookieStorage = function () {
   function CookieStorage() {
+    var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
     _classCallCheck(this, CookieStorage);
+
+    this.cookieOptions = Object.assign({ path: '/' }, options);
+    prefix = options.prefix || prefix;
   }
 
   _createClass(CookieStorage, [{
@@ -305,18 +287,14 @@ var CookieStorage = function () {
   }, {
     key: 'setItem',
     value: function setItem(key, value) {
-      document.cookie = _cookie2.default.serialize(prefix + key, value, {
-        path: '/'
-      });
+      document.cookie = _cookie2.default.serialize(prefix + key, value, this.cookieOptions);
       return value;
     }
   }, {
     key: 'removeItem',
     value: function removeItem(key) {
-      document.cookie = _cookie2.default.serialize(prefix + key, '', {
-        path: '/',
-        maxAge: -1
-      });
+      var options = Object.assign({}, this.cookieOptions, { maxAge: -1 });
+      document.cookie = _cookie2.default.serialize(prefix + key, '', options);
       return null;
     }
   }, {
@@ -338,22 +316,66 @@ var CookieStorage = function () {
 
 exports.default = CookieStorage;
 function hasCookies() {
-  var _CookieStorage$protot = CookieStorage.prototype,
-      setItem = _CookieStorage$protot.setItem,
-      getItem = _CookieStorage$protot.getItem,
-      removeItem = _CookieStorage$protot.removeItem;
-
+  var storage = new CookieStorage();
 
   try {
     var TEST_KEY = '__test';
-    setItem(TEST_KEY, '1');
-    var value = getItem(TEST_KEY);
-    removeItem(TEST_KEY);
+    storage.setItem(TEST_KEY, '1');
+    var value = storage.getItem(TEST_KEY);
+    storage.removeItem(TEST_KEY);
 
-    return value == '1';
+    return value === '1';
   } catch (e) {
     return false;
   }
+}
+});
+
+var isSupported_1 = createCommonjsModule(function (module, exports) {
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = isSupported;
+
+
+
+var TEST_KEY = '__test';
+
+function hasStorage(name) {
+  try {
+    var storage = window[name];
+    storage.setItem(TEST_KEY, '1');
+    storage.removeItem(TEST_KEY);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function isSupported() {
+  var name = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 'localStorage';
+
+  var storage = String(name).replace(/storage$/i, '').toLowerCase();
+
+  if (storage === 'local') {
+    return hasStorage('localStorage');
+  }
+
+  if (storage === 'session') {
+    return hasStorage('sessionStorage');
+  }
+
+  if (storage === 'cookie') {
+    return (0, CookieStorage_1.hasCookies)();
+  }
+
+  if (storage === 'memory') {
+    return true;
+  }
+
+  throw new Error('Storage method `' + name + '` is not available.\n    Please use one of the following: localStorage, sessionStorage, cookieStorage, memoryStorage.');
 }
 });
 
@@ -403,16 +425,17 @@ var MemoryStorage = function () {
 exports.default = MemoryStorage;
 });
 
-var index = createCommonjsModule(function (module, exports) {
+var lib = createCommonjsModule(function (module, exports) {
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.MemoryStorage = exports.CookieStorage = exports.isSupported = exports.storage = undefined;
 
 
 
-var _hasStorage2 = _interopRequireDefault(hasStorage_1);
+var _isSupported2 = _interopRequireDefault(isSupported_1);
 
 
 
@@ -426,24 +449,28 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 var storage = null;
 
-if ((0, _hasStorage2.default)('localStorage')) {
+if ((0, _isSupported2.default)('localStorage')) {
   // use localStorage
-  storage = window.localStorage;
-} else if ((0, _hasStorage2.default)('sessionStorage')) {
+  exports.storage = storage = window.localStorage;
+} else if ((0, _isSupported2.default)('sessionStorage')) {
   // use sessionStorage
-  storage = window.sessionStorage;
-} else if ((0, CookieStorage_1.hasCookies)()) {
+  exports.storage = storage = window.sessionStorage;
+} else if ((0, _isSupported2.default)('cookieStorage')) {
   // use cookies
-  storage = new _CookieStorage2.default();
+  exports.storage = storage = new _CookieStorage2.default();
 } else {
   // use memory
-  storage = new _MemoryStorage2.default();
+  exports.storage = storage = new _MemoryStorage2.default();
 }
 
 exports.default = storage;
+exports.storage = storage;
+exports.isSupported = _isSupported2.default;
+exports.CookieStorage = _CookieStorage2.default;
+exports.MemoryStorage = _MemoryStorage2.default;
 });
 
-var storage = unwrapExports(index);
+var storage = unwrapExports(lib);
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 

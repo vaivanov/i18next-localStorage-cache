@@ -9,7 +9,7 @@ const compress = argv.uglify;
 
 const babelOptions = {
   exclude: 'node_modules/**',
-  presets: [['es2015', { modules: false }], 'stage-0'],
+  presets: [['env', { modules: false }]],
   babelrc: false
 };
 const commonjsOptions = {

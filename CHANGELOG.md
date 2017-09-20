@@ -1,3 +1,6 @@
+### 3.0.0
+- update depreacted presets and dependencies
+
 ### 1.1.1
 - fixes i18nVersion is regarded as a namespace [PR7](https://github.com/i18next/i18next-localStorage-cache/pull/7)
 
